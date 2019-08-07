@@ -23,8 +23,9 @@ class BarsDetection(ClamApp):
         # this mock-up method always returns true
         return True
 
-    def annotate(self, mmif_json):
-        mmif = Mmif(mmif_json)
+    def annotate(self, mmif):
+        if type(mmif) is not Mmif:
+            mmif = Mmif(mmif)
         video_filename = mmif.get_medium_location(MediaTypes.V)
         bars_output = self.run_bd(video_filename) #bars_output is a list of frame number interval tuples
 
