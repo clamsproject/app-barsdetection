@@ -7,4 +7,4 @@ imutils==0.5.2
 numpy==1.15.4
 scikit-image==0.14.1
 
-git+https://github.com/clamsproject/clams-python-sdk.git@serialize-bug
+git+https://github.com/clamsproject/clams-python-sdk.git@dev
