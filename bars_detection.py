@@ -83,6 +83,7 @@ class BarsDetection(ClamApp):
                             continue
                         bars.append((start_frame, end_frame))
                         first_frame = True
+                        break ## this stops running after first bars is found
             counter += 1
         return bars
 
