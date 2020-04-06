@@ -7,3 +7,5 @@ chmod -R u+w $HOME/video-files && docker build . -t bars_detector && docker run 
 ```
 
 Once the process is done, you'll find a `output.csv` file in the local target directory. 
+
+Additionally, you'll find a directory `img` in the target directory with the start and end bar frames saved as images. 
