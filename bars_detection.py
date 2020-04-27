@@ -76,12 +76,12 @@ class BarsDetection(ClamApp):
                 is_similar, val = calculate_similarity(f)
                 if is_similar: ## if it is bars and tones
                     if first_frame:
-                        start_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
+                        start_frame = cap.get(cv2.CAP_PROP_POS_MSEC)
                         start_image = f
                         first_frame = False
                 else: ## if its not bars and tones
                     if not first_frame: ## if the start time has been set to false so we're in bars and tones
-                        end_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
+                        end_frame = cap.get(cv2.CAP_PROP_POS_MSEC)
                         if end_frame == "0":
                             continue
                         bars.append((start_frame, end_frame))
