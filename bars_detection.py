@@ -1,6 +1,7 @@
 import cv2
 import pickle
 import os
+import timecode
 
 from skimage.measure import compare_ssim
 from clams.serve import ClamApp
@@ -76,18 +77,20 @@ class BarsDetection(ClamApp):
                 is_similar, val = calculate_similarity(f)
                 if is_similar: ## if it is bars and tones
                     if first_frame:
-                        start_frame = cap.get(cv2.CAP_PROP_POS_MSEC)
+                        start_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
                         start_image = f
                         first_frame = False
                 else: ## if its not bars and tones
                     if not first_frame: ## if the start time has been set to false so we're in bars and tones
-                        end_frame = cap.get(cv2.CAP_PROP_POS_MSEC)
+                        end_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
                         if end_frame == "0":
                             continue
-                        bars.append((start_frame, end_frame))
                         base_name = video_filename.split("/")[-1]
                         if not os.path.exists("/data/img"):
                             os.mkdir("/data/img")
+                        start_timecode = timecode.Timecode(framerate=cap.get(cv2.CAP_PROP_FPS), frames=start_frame)
+                        end_timecode = timecode.Timecode(framerate=cap.get(cv2.CAP_PROP_FPS), frames=end_frame)
+                        bars.append((start_timecode, end_timecode))
                         cv2.imwrite(f"/data/img/{base_name}_{int(start_frame)}.png", start_image)
                         cv2.imwrite(f"/data/img/{base_name}_{int(end_frame)}.png", prev)
                         first_frame = True
