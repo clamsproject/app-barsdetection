@@ -59,6 +59,8 @@ class BarsDetection(ClamApp):
         def calculate_similarity(frame):
             # returns boolean, score
             f = process_image(frame)
+            if f.shape != grey.shape:
+                f = cv2.resize(f, (grey.shape[1], grey.shape[0]))
             (score, _) = compare_ssim(f, grey, full=True)
             return (score>.7), score
 
