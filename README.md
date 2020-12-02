@@ -13,6 +13,7 @@ The bar detector can be applied to an mmif from the terminal with the following 
 `curl -X PUT -d @path/to/mmif/file http://0.0.0.0:5000`
 
 Where the mmif file contains a video document with a location specified relative to the docker mount location:
+
 `{
   "metadata": {
     "mmif": "http://mmif.clams.ai/0.2.1"
@@ -29,3 +30,24 @@ Where the mmif file contains a video document with a location specified relative
   ],
   "views": []
 }`
+
+### Tutorial
+
+Running the docker container. 
+
+`git clone https://github.com/clamsproject/app-barsdetection.git`
+
+`cd app-barsdetection`
+
+`docker build . -t bar_detector`
+
+`docker run --rm -p 5000:5000 -v ~/data/clams/video/:/data bar_detector`
+
+Apply the bars detector to a directory of mmifs.
+
+First generate a directory of mmifs from a directory of video files.
+`sh scripts/wrap_all.sh /path/to/videos/ /data/demo/`
+
+Next apply the tool to all of the mmifs you just created. 
+`scripts/apply_all.sh source_directory target_directory 0.0.0.0:5000`
+
