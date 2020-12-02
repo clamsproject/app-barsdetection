@@ -46,8 +46,12 @@ Running the docker container.
 Apply the bars detector to a directory of mmifs.
 
 First generate a directory of mmifs from a directory of video files.
+Note: This assumes clams-python is installed.
+
 `sh scripts/wrap_all.sh /path/to/videos/ /data/demo/`
 
+
 Next apply the tool to all of the mmifs you just created. 
-`scripts/apply_all.sh source_directory target_directory 0.0.0.0:5000`
+
+`sh scripts/apply_all.sh source_directory target_directory 0.0.0.0:5000`
 
