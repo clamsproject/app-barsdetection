@@ -43,15 +43,11 @@ Running the docker container.
 
 `docker run --rm -p 5000:5000 -v ~/data/clams/video/:/data bar_detector`
 
-Apply the bars detector to a directory of mmifs.
+Now with the docker container running, post mmif to the app.
 
-First generate a directory of mmifs from a directory of video files.
-Note: This assumes clams-python is installed.
+`curl -X PUT -d @path/to/mmif/file http://0.0.0.0:5000`
 
-`sh scripts/wrap_all.sh /path/to/videos/ /data/demo/`
+or with some parameters
 
-
-Next apply the tool to all of the mmifs you just created. 
-
-`sh scripts/apply_all.sh source_directory target_directory 0.0.0.0:5000`
+`curl -X PUT -d @path/to/mmif/file http://0.0.0.0:5000?stopAt=1800`
 
