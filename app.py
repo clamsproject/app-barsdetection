@@ -75,7 +75,9 @@ class BarDetection(ClamsApp):
         start_frame = None
         while fvs.running():
             frame = fvs.read()
-            if counter > stop_at:  ## about 5 minutes
+            if frame is None: ##todo 4/27/21 kelleylynch revisit  this , is  it really necessary, why are we getting a None frome?
+                break
+            if counter > stop_at:
                 break
             if counter % sample_ratio == 0:
                 result = frame_in_range(frame)
