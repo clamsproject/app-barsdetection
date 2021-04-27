@@ -1,5 +1,6 @@
 import pickle
 import cv2
+import traceback
 from imutils.video import FileVideoStream
 from clams.app import ClamsApp
 from clams.restify import Restifier
@@ -25,9 +26,14 @@ class BarDetection(ClamsApp):
 
     def _annotate(self, mmif: Mmif, **kwargs):
         video_filename = mmif.get_document_location(DocumentTypes.VideoDocument.value)
-        output = self.run_detection(
-            video_filename, mmif, **kwargs
-        )
+        try:
+            output = self.run_detection(
+                video_filename, mmif, **kwargs
+            )
+        except Exception as e:
+            print (f"error processing file {video_filename}")
+            traceback.print_exc()
+
         new_view = mmif.new_view()
         new_view.metadata.set_additional_property("parameters", kwargs.copy())
         new_view.metadata['app'] = self.metadata["iri"]
