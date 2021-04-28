@@ -99,5 +99,5 @@ class BarDetection(ClamsApp):
 
 if __name__ == "__main__":
     tool = BarDetection()
-    service = Restifier(tool, port=5005)
+    service = Restifier(tool)
     service.run()
