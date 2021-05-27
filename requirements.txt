@@ -1,5 +1,4 @@
 opencv-python==4.4.0.46
-imutils==0.5.4
 numpy==1.19.5
 scikit-image==0.17.2
 clams-python==0.2.2
