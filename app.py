@@ -1,7 +1,7 @@
 import pickle
 import cv2
 import traceback
-from imutils.video import FileVideoStream
+import clams
 from clams.app import ClamsApp
 from clams.restify import Restifier
 from mmif.vocabulary import AnnotationTypes, DocumentTypes
@@ -9,7 +9,7 @@ from mmif import Mmif
 
 from skimage.metrics import structural_similarity
 
-APP_VERSION="0.2.0"
+APP_VERSION="0.2.1"
 
 
 class BarDetection(ClamsApp):
@@ -17,12 +17,47 @@ class BarDetection(ClamsApp):
         metadata = {
             "name": "Bar Detection",
             "description": "This tool detects SMPTE Bars.",
-            "vendor": "Team CLAMS",
-            "iri": f"http://mmif.clams.ai/apps/barsdetection/{APP_VERSION}",
-            "requires": [DocumentTypes.VideoDocument],
-            "produces": [AnnotationTypes.TimeFrame],
+            "app_version": str(APP_VERSION),
+            "app_license": "MIT",
+            "url": f"http://mmif.clams.ai/apps/barsdetection/{APP_VERSION}",
+            "identifier": f"http://mmif.clams.ai/apps/barsdetection/{APP_VERSION}",
+            "input": [{"@type": DocumentTypes.VideoDocument, "required": True}],
+            "output": [{"@type": AnnotationTypes.TimeFrame, "properties": {"frameType": "string"}}],
+            "parameters": [
+                {
+                    "name": "timeUnit",
+                    "type": "string",
+                    "choices": ["frames", "milliseconds"],
+                    "default": "frames",
+                    "description": "Unit for output typeframe.",
+                },
+                {
+                    "name": "sampleRatio",
+                    "type": "integer",
+                    "default": "30",
+                    "description": "Frequency to sample frames.",
+                },
+                {
+                    "name": "stopAt",
+                    "type": "integer",
+                    "default": 30 * 60 * 60 * 5,
+                    "description": "Frame number to stop processing",
+                },
+                {
+                    "name": "stopAfterOne",
+                    "type": "boolean",
+                    "default": True,
+                    "description": "When True, processing stops after first timeframe is found.",
+                },
+                {
+                    "name": "minFrameCount",
+                    "type": "integer",
+                    "default": 10,  # minimum value = 1 todo how to include minimum
+                    "description": "Minimum number of frames required for a timeframe to be included in the output",
+                }
+            ]
         }
-        return metadata
+        return clams.AppMetadata(**metadata)
 
     def _annotate(self, mmif: Mmif, **kwargs):
         video_filename = mmif.get_document_location(DocumentTypes.VideoDocument.value)[7:]
@@ -32,18 +67,31 @@ class BarDetection(ClamsApp):
             )
         except Exception as e:
             print (f"error processing file {video_filename}")
+            output = []
             traceback.print_exc()
-
+        config = self.get_configuration(**kwargs)
+        unit = config["timeUnit"]
         new_view = mmif.new_view()
-        new_view.metadata.set_additional_property("parameters", kwargs.copy())
-        new_view.metadata['app'] = self.metadata["iri"]
-
+        self.sign_view(new_view, config)
+        new_view.new_contain(
+            AnnotationTypes.TimeFrame,
+            timeUnit=unit,
+            document=mmif.get_documents_by_type(DocumentTypes.VideoDocument)[0].id
+        )
+        print (output)
+        if unit == "milliseconds":
+            output = output[1]
+        elif unit == "frames":
+            output = output[0]
+        else:
+            raise TypeError(
+                "invalid unit type"
+        )
         for _id, frames in enumerate(output):
             start_frame, end_frame = frames
-            timeframe_annotation = new_view.new_annotation(f"tf{_id}", AnnotationTypes.TimeFrame)
+            timeframe_annotation = new_view.new_annotation(AnnotationTypes.TimeFrame)
             timeframe_annotation.add_property("start", start_frame)
             timeframe_annotation.add_property("end", end_frame)
-            timeframe_annotation.add_property("unit", "frame")
             timeframe_annotation.add_property("frameType", "bars")
         return mmif
 
@@ -74,11 +122,18 @@ class BarDetection(ClamsApp):
         result_list = []
         in_range = False
         start_frame = None
-        while fvs.running():
-            frame = fvs.read()
+        start_seconds = None
+        while True:
+            _, frame = cap.read()
             if frame is None: ##todo 4/27/21 kelleylynch revisit  this , is  it really necessary, why are we getting a None frome?
                 break
             if counter > stop_at:
+                if in_range:
+                    if counter - start_frame > min_duration:
+                        frame_number_result.append((start_frame, counter))
+                        seconds_result.append(
+                            (start_seconds, cap.get(cv2.CAP_PROP_POS_MSEC))
+                        )
                 break
             if counter % sample_ratio == 0:
                 result = frame_in_range(frame)
@@ -86,13 +141,17 @@ class BarDetection(ClamsApp):
                     if not in_range:
                         in_range = True
                         start_frame = counter
+                        start_seconds = cap.get(cv2.CAP_PROP_POS_MSEC)
                 else:
                     if in_range:
                         in_range = False
                         if counter - start_frame > min_duration:
-                            result_list.append((start_frame, counter))
+                            frame_number_result.append((start_frame, counter))
+                            seconds_result.append(
+                                (start_seconds, cap.get(cv2.CAP_PROP_POS_MSEC))
+                            )
                             if stop_after_one:
-                                return result_list
+                                break
             counter += 1
         return result_list
 
