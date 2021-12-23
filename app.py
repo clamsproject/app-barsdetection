@@ -60,7 +60,7 @@ class BarDetection(ClamsApp):
         return clams.AppMetadata(**metadata)
 
     def _annotate(self, mmif: Mmif, **kwargs):
-        video_filename = mmif.get_document_location(DocumentTypes.VideoDocument.value)[7:]
+        video_filename = mmif.get_document_location(DocumentTypes.VideoDocument)[7:]
         try:
             output = self.run_detection(
                 video_filename, mmif, **kwargs
@@ -116,10 +116,10 @@ class BarDetection(ClamsApp):
             score = structural_similarity(f, grey)
             return score > ssim_threshold
 
-        print (f"running file {video_filename}")
-        fvs = FileVideoStream(video_filename).start()
+        cap = cv2.VideoCapture(video_filename)
         counter = 0
-        result_list = []
+        frame_number_result = []
+        seconds_result = []
         in_range = False
         start_frame = None
         start_seconds = None
@@ -153,7 +153,7 @@ class BarDetection(ClamsApp):
                             if stop_after_one:
                                 break
             counter += 1
-        return result_list
+        return frame_number_result, seconds_result
 
 
 if __name__ == "__main__":
