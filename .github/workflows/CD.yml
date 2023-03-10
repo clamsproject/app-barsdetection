@@ -13,4 +13,4 @@ on:
 jobs:
   build:
     name: 🔨 Build and deploy to ghcr
-    uses: clamsproject/.github/.github/workflows/build.yml@main
+    uses: clamsproject/.github/.github/workflows/app-docker-ghcr.yml@main
