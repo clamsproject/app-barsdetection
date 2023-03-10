@@ -1,15 +1,22 @@
 ### Using docker
 
-We provide a [`Dockerfile`](Dockerfile). If you want to run the SMPTE bar detector as a docker container (not worrying about dependencies), build an image from the `Dockerfile` and run it with the target directory mounted to `/data`. Just MAKE SURE that target directory is writable by others (`chmod o+w $TARGET_DIR`). For example, 
+We provide a [`Dockerfile`](Dockerfile). If you want to run the SMPTE bar detector as a docker container (not worrying about dependencies), build an image from the `Dockerfile` and run it with the target directory mounted to `/data`. Just MAKE SURE that target directory is writable by others (`chmod o+w $TARGET_DIR`). For example,
 
 ```bash
 chmod -R o+w data_dir && docker build . -t bar_detector && docker run --rm -p 5000:5000 -v data_dir:/data bar_detector
 ```
-This will run the bar detector on port 5000. 
+
+This will run the bar detector on port 5000.
+
+#### Prebuilt image
+
+A [prebuilt docker image](https://github.com/clamsproject/app-barsdetection/pkgs/container/app-barsdetection) is also available at `ghcr.io/clamsproject/app-barsdetection`
+
+## Usage
 
 The video files should be in a directory named `video` in the data_dir directory.
 
-The bar detector can be applied to an mmif from the terminal with the following command. 
+The bar detector can be applied to an mmif from the terminal with the following command.
 `curl -X PUT -d @path/to/mmif/file http://0.0.0.0:5000`
 
 Where the mmif file contains a video document with a location specified relative to the docker mount location:
@@ -33,7 +40,7 @@ Where the mmif file contains a video document with a location specified relative
 
 ### Tutorial
 
-Running the docker container. 
+Running the docker container.
 
 `git clone https://github.com/clamsproject/app-barsdetection.git`
 
@@ -50,4 +57,3 @@ Now with the docker container running, post mmif to the app.
 or with some parameters
 
 `curl -X PUT -d @path/to/mmif/file http://0.0.0.0:5000?stopAt=1800`
-
