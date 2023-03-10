@@ -1,0 +1,16 @@
+name: 🪂 Continuous Deployment
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  release:
+    types: [published, edited, prereleased]
+
+jobs:
+  build:
+    name: 🔨 Build and deploy to ghcr
+    uses: clamsproject/.github/.github/workflows/build.yml@main
