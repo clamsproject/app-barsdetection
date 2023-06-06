@@ -26,7 +26,7 @@ def appmetadata() -> AppMetadata:
         description="This tool detects SMPTE Bars.",
         app_license="MIT", 
         identifier="bars-detection",
-        url=f"http://mmif.clams.ai/apps/barsdetection/{APP_VERSION}" ,
+        url=f"https://github.com/clamsproject/app-barsdetection" ,
         #analyzer_version='version_X',
         #analyzer_version=[l.strip().rsplit('==')[-1] for l in open('requirements.txt').readlines() if re.match(r'^ANALYZER_NAME==', l)][0],
         #analyzer_license="",  # short name for a software license
