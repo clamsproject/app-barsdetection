@@ -24,7 +24,7 @@ Where the mmif file contains a video document with a location specified relative
 
 ## Configurable runtime parameters
 
-The runtime parameters of this tone detector are configured for various use cases, and are capable of streamlining certain tasks. In order to use these parameters, simply include them in the POST request:
+The runtime parameters of this tool are configured for various use cases, and are capable of streamlining certain tasks. In order to use these parameters, simply include them in the POST request:
 
 ```bash
 curl -X PUT -d @path/to/mmif/file http://0.0.0.0:5000?stopAt=1800
