@@ -8,7 +8,8 @@ from mmif import DocumentTypes, AnnotationTypes
 from clams.appmetadata import AppMetadata
 
 
-APP_VERSION = "0.2.1"
+FRAME_TYPE_LABEL = 'bars'
+
 # DO NOT CHANGE the function name 
 def appmetadata() -> AppMetadata:
     """
@@ -23,33 +24,30 @@ def appmetadata() -> AppMetadata:
     # Initial Metadata
     metadata = AppMetadata(
         name="Bars Detection",
-        description="This tool detects SMPTE Bars.",
+        description="This tool detects SMPTE color bars.",
         app_license="MIT", 
         identifier="bars-detection",
         url=f"https://github.com/clamsproject/app-barsdetection" ,
-        #analyzer_version='version_X',
-        #analyzer_version=[l.strip().rsplit('==')[-1] for l in open('requirements.txt').readlines() if re.match(r'^ANALYZER_NAME==', l)][0],
-        #analyzer_license="",  # short name for a software license
     )
     # I/O Specification
     metadata.add_input(DocumentTypes.VideoDocument)
-    metadata.add_output(AnnotationTypes.TimeFrame, typeSpecificProperty={"frameType":"string"})
+    metadata.add_output(AnnotationTypes.TimeFrame, typeSpecificProperty={"frameType": FRAME_TYPE_LABEL})
     
     # Runtime Param Specification
     metadata.add_parameter(name="timeUnit",
                            description="Unit for output typeframe.",
-                           choices=["frames","milliseconds"],
+                           choices=["frames", "seconds", "milliseconds"],
                            default="frames",
                            type="string") 
 
     metadata.add_parameter(name="sampleRatio",
                            description="Frequency to sample frames.",
-                           default=30,
+                           default=30,  # ~1 frame per second
                            type="integer")
     
     metadata.add_parameter(name="stopAt",
                            description="Frame number to stop processing.",
-                           default=30 * 60 * 60 * 5, 
+                           default=5 * 60 * 30,  # ~5 minutes of video at 30fps
                            type="integer")
     
     metadata.add_parameter(name="stopAfterOne",
@@ -61,6 +59,11 @@ def appmetadata() -> AppMetadata:
                            description="minimum number of frames required for a timeframe to be included in the output.",
                            default=10,
                            type="integer")
+
+    metadata.add_parameter(name="threshold",
+                           description="Threshold from 0-1, lower accepts more potential slates.",
+                           type="number",
+                           default=0.7)
     return metadata
 
 

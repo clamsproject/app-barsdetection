@@ -1,14 +1,19 @@
 import argparse
+import logging
+import pickle
+import warnings
 from typing import Union
 
-import pickle
 import cv2
-import traceback
-import clams 
 from clams import ClamsApp, Restifier
-from mmif import Mmif, View, Annotation, Document, AnnotationTypes, DocumentTypes
-
+from mmif import Mmif, AnnotationTypes, DocumentTypes
+from mmif.utils import video_document_helper as vdh
 from skimage.metrics import structural_similarity
+
+import metadata
+
+# logging.basicConfig(level=logging.DEBUG)
+
 
 class BarsDetection(ClamsApp):
 
@@ -19,102 +24,74 @@ class BarsDetection(ClamsApp):
         pass
 
     def _annotate(self, mmif: Union[str, dict, Mmif], **parameters) -> Mmif:
-        video_filename = mmif.get_document_location(DocumentTypes.VideoDocument)[7:]
-        try:
-            output = self.run_detection(
-                video_filename, mmif, **parameters
-            )
-        except Exception as e:
-            print(f"error processing file {video_filename}")
-            output = []
-            traceback.print_exc()
+        if not isinstance(mmif, Mmif):
+            mmif = Mmif(mmif)
+        new_view = mmif.new_view()
+        self.sign_view(new_view, parameters)
+        vds = mmif.get_documents_by_type(DocumentTypes.VideoDocument)
+        if vds:
+            vd = vds[0]
+        else:
+            warnings.warn("No video document found in the input MMIF.")
+            return mmif
         config = self.get_configuration(**parameters)
         unit = config["timeUnit"]
-        new_view = mmif.new_view()
-        self.sign_view(new_view, config)
         new_view.new_contain(
             AnnotationTypes.TimeFrame,
             timeUnit=unit,
-            document=mmif.get_documents_by_type(DocumentTypes.VideoDocument)[0].id
+            document=vd.id
         )
-        print(output) 
 
-        if unit == "milliseconds":
-            output = output[1]
-        elif unit == "frames":
-            output = output[0]
-        else:
-            raise TypeError(
-                "Invalid unit type"
-            )
-        for _id, frames in enumerate(output):
-            start_frame, end_frame = frames
+        for bars in self.run_detection(vd, **config):
+            start_frame, end_frame = bars
             timeframe_annotation = new_view.new_annotation(AnnotationTypes.TimeFrame)
-            timeframe_annotation.add_property("start",start_frame)
-            timeframe_annotation.add_property("end",end_frame)
-            timeframe_annotation.add_property("frameType","bars")
+            timeframe_annotation.add_property("start", vdh.convert(start_frame, 'f', unit, vd.get_property("fps")))
+            timeframe_annotation.add_property("end", vdh.convert(end_frame, 'f', unit, vd.get_property("fps")))
+            timeframe_annotation.add_property("frameType", metadata.FRAME_TYPE_LABEL)
         return mmif
 
     @staticmethod
-    def run_detection(video_filename, mmif=None, **kwargs):
-        sample_ratio = int(kwargs.get('sampleRatio',30))
-        min_duration = int(kwargs.get('minFrameCount',10))
-        stop_after_one = kwargs.get('stopAfterOne',False)
-        stop_at = int(kwargs.get('stopAt',30*60*60*5))
-        ssim_threshold = float(kwargs.get('threshold',0.7))
+    def run_detection(vd, **kwargs):
         with open("grey.p", "rb") as p:
             grey = pickle.load(p)
         
         def frame_in_range(frame_):
-            '''Returns true if frame is of type being detected, else false'''
-            def process_image(f):
-                f = cv2.cvtColor(f, cv2.COLOR_BGR2GRAY)
-                return f
-            f = process_image(frame_)
+            """
+            Returns true if frame is of type being detected, else false
+            """
+            f = cv2.cvtColor(frame_, cv2.COLOR_BGR2GRAY)
             if f.shape != grey.shape:
-                f = cv2.resize(f (grey.shape[1], grey.shape[0]))
+                f = cv2.resize(f, (grey.shape[1], grey.shape[0]))
             score = structural_similarity(f, grey)
-            return score > ssim_threshold
-
-        cap = cv2.VideoCapture(video_filename)
-        counter = 0
-        frame_number_result = []
-        seconds_result = []
-        in_range = False
+            logging.debug(f"frame score: {score}, {score>kwargs['threshold']}")
+            return score > kwargs['threshold']
+        
+        cap = vdh.capture(vd)
+        frames_to_test = vdh.sample_frames(0, kwargs['stopAt'], kwargs['sampleRatio'])
+        logging.debug(f"frames to test: {frames_to_test}")
+        bars_found = []
+        in_slate = False
         start_frame = None
-        start_seconds = None
-        while True:
-            _, frame = cap.read()
-            if frame is None:
+        cur_frame = frames_to_test[0]
+        for cur_frame in frames_to_test:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, cur_frame - 1)
+            ret, frame = cap.read()
+            if not ret:
                 break
-            if counter > stop_at:
-                if in_range:
-                    if counter - start_frame > min_duration:
-                        frame_number_result.append((start_frame, counter))
-                        seconds_result.append(
-                            (start_seconds, cap.get(cv2.CAP_PROP_POS_MSEC))
-                        )
-                break
-            if counter % sample_ratio == 0:
-                result = frame_in_range(frame)
-                if result:
-                    if not in_range:
-                        in_range = True
-                        start_frame = counter
-                        start_seconds = cap.get(cv2.CAP_PROP_POS_MSEC)
-                else:
-                    if in_range:
-                        in_range = False
-                        if counter - start_frame > min_duration:
-                            frame_number_result.append((start_frame, counter))
-                            seconds_result.append(
-                                (start_seconds, cap.get(cv2.CAP_PROP_POS_MSEC))
-                            )
-                            if stop_after_one:
-                                break
-            counter += 1
-        return frame_number_result, seconds_result
-
+            if frame_in_range(frame):
+                if not in_slate:
+                    in_slate = True
+                    start_frame = cur_frame
+            elif in_slate:
+                in_slate = False
+                if cur_frame - start_frame > kwargs['minFrameCount']:
+                    bars_found.append((start_frame, cur_frame))
+                if kwargs['stopAfterOne']:
+                    return bars_found
+        if in_slate:
+            if cur_frame - start_frame > kwargs['minFrameCount']:
+                bars_found.append((start_frame, cur_frame))
+        return bars_found
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -122,16 +99,13 @@ if __name__ == "__main__":
         "--port", action="store", default="5000", help="set port to listen"
     )
     parser.add_argument("--production", action="store_true", help="run gunicorn server")
-    # more arguments as needed
-    # parser.add_argument(more_arg...)
 
     parsed_args = parser.parse_args()
 
     # create the app instance
     app = BarsDetection()
 
-    http_app = Restifier(app, port=int(parsed_args.port)
-    )
+    http_app = Restifier(app, port=int(parsed_args.port))
     if parsed_args.production:
         http_app.serve_production()
     else:

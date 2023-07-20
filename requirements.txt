@@ -1,5 +1,5 @@
 # Make sure clams-python version is explicitly specified, at least the lower bound
-clams-python==1.0.2
-opencv-python==4.5.3.56
+clams-python==1.0.7
+opencv-python==4.*
 scikit-image
 numpy>=1.19
