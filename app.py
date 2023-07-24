@@ -12,8 +12,6 @@ from skimage.metrics import structural_similarity
 
 import metadata
 
-# logging.basicConfig(level=logging.DEBUG)
-
 
 class BarsDetection(ClamsApp):
 
@@ -63,12 +61,12 @@ class BarsDetection(ClamsApp):
             if f.shape != grey.shape:
                 f = cv2.resize(f, (grey.shape[1], grey.shape[0]))
             score = structural_similarity(f, grey)
-            logging.debug(f"frame score: {score}, {score>kwargs['threshold']}")
+            self.logger.debug(f"frame score: {score}, {score>kwargs['threshold']}")
             return score > kwargs['threshold']
         
         cap = vdh.capture(vd)
         frames_to_test = vdh.sample_frames(0, kwargs['stopAt'], kwargs['sampleRatio'])
-        logging.debug(f"frames to test: {frames_to_test}")
+        self.logger.debug(f"frames to test: {frames_to_test}")
         bars_found = []
         in_slate = False
         start_frame = None
@@ -95,9 +93,7 @@ class BarsDetection(ClamsApp):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--port", action="store", default="5000", help="set port to listen"
-    )
+    parser.add_argument("--port", action="store", default="5000", help="set port to listen" )
     parser.add_argument("--production", action="store_true", help="run gunicorn server")
 
     parsed_args = parser.parse_args()
@@ -106,7 +102,10 @@ if __name__ == "__main__":
     app = BarsDetection()
 
     http_app = Restifier(app, port=int(parsed_args.port))
+    # for running the application in production mode
     if parsed_args.production:
         http_app.serve_production()
+    # development mode
     else:
+        app.logger.setLevel(logging.DEBUG)
         http_app.run()
