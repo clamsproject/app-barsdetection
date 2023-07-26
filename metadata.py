@@ -28,7 +28,7 @@ def appmetadata() -> AppMetadata:
         name="Bars Detection",
         description="This tool detects SMPTE color bars.",
         app_license="MIT", 
-        identifier="bars-detection",
+        identifier="barsdetection",
         url=f"https://github.com/clamsproject/app-barsdetection" ,
     )
     # I/O Specification
