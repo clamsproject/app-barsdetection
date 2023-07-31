@@ -48,8 +48,7 @@ class BarsDetection(ClamsApp):
             timeframe_annotation.add_property("frameType", metadata.FRAME_TYPE_LABEL)
         return mmif
 
-    @staticmethod
-    def run_detection(vd, **kwargs):
+    def run_detection(self, vd, **kwargs):
         with open("grey.p", "rb") as p:
             grey = pickle.load(p)
         
